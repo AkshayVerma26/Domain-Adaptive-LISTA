@@ -23,8 +23,7 @@ class LISTA(nn.Module):
     def __init__(self, m, n, Dict, numIter, alpha, device):
         super(LISTA, self).__init__()
         self._W = nn.Linear(in_features = m, out_features = n, bias=False)
-        self._S = nn.Linear(in_features = n, out_features = n,
-                            bias=False)
+        self._S = nn.Linear(in_features = n, out_features = n, bias=False)
 
         self.thr = nn.Parameter(torch.rand(numIter,1), requires_grad=True)
         self.numIter = numIter
@@ -47,7 +46,6 @@ class LISTA(nn.Module):
         self._W.weight = nn.Parameter(B)
         self.thr.data = nn.Parameter(thr.to(self.device))
 
-################################ check this part
     def forward(self, y):
         x = []
         d = torch.zeros(y.shape[0], self.A.shape[1], device = self.device)
@@ -104,7 +102,6 @@ def LISTA_train(X , Y, D, numEpochs, numLayers, device, learning_rate):
     dataLoader_valid = DataLoader(dataset_valid, batch_size=batch_size, shuffle = False)
     
     # compute the max eigen value of the D'*D
-    # alpha = (np.linalg.norm(D, 2) ** 2 )*1.001                              #check this formula
     T = np.matmul(D.T, D)
     eg, _ = np.linalg.eig(T)
     eg = np.abs(eg)
