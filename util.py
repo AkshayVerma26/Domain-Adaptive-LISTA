@@ -7,12 +7,10 @@ import torch.nn as nn
 
 # Dataset class
 class datagen():
-    def __init__(self, n, m, k, seed, A, snr_list):
+    def __init__(self, n, m, k, seed):
         self.n = n
         self.m = m
         self.k = k
-        self.A = A
-        self.snr_lst = snr_list
         self.seed = seed
 
     # Generate sparse signal X with amplitude 1 and equally spaced
@@ -31,8 +29,8 @@ class datagen():
         return mes_mat
 
     # Generate measurements Y
-    def generate_measurement(self, x_lst):
-        return np.matmul(self.A, x_lst)
+    def generate_measurement(self, A, x_lst):
+        return np.matmul(A, x_lst)
 
     # Add noise to measurements Y
     def add_noise(self, y_lst, snr):
@@ -46,14 +44,32 @@ class datagen():
             y_lst[:,i] += noise
         return y_lst
 
-    def data_gen(self, p):
+    def data_gen(self, A, p, snr_lst):
         Y = []
         X = self.generate_sparse_signal(p)
-        for snr in self.snr_lst:
-            y = self.generate_measurement(X)
+        for snr in snr_lst:
+            y = self.generate_measurement(A, X)
             y_noisy = self.add_noise(y, snr)
             Y.append(y_noisy)
         return X, Y
+
+def data_mix(seed, x5, y5, x15, y15, x30, y30):
+    l = x5.shape[1]
+    sel = l//3
+    
+    idx5 = seed.choice(l, sel, replace=False)
+    idx15 = seed.choice(l, sel, replace=False)
+    idx30 = seed.choice(l, sel, replace=False)
+    
+    x_mixed = np.concatenate((x5[:,idx5], x15[:,idx15], x30[:,idx30]), axis=1)
+    y_mixed = np.concatenate((y5[:,idx5], y15[:,idx15], y30[:,idx30]), axis=1)
+    
+    indices = np.arange(x_mixed.shape[1])
+    np.random.shuffle(indices)
+    X_mixed = x_mixed[:, indices]
+    Y_mixed = y_mixed[:, indices]
+    
+    return X_mixed, Y_mixed
 
 # Plotter class
 class plotter():
