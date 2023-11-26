@@ -1,26 +1,14 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Jul 23 12:07:57 2021
-
-@author: kartheek
-
-This file contains the training modules of LISTA
-"""
-
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
-#%% 
-
 def soft_thr(input_, theta_):
     return F.relu(input_-theta_)-F.relu(-input_-theta_)
 
 class LISTA(nn.Module):
-    def __init__(self, m, n, Dict, numIter, alpha, device):
+    def __init__(self, m, n, Dict, numIter, L, device):
         super(LISTA, self).__init__()
         self._W = nn.Linear(in_features = m, out_features = n, bias=False)
         self._S = nn.Linear(in_features = n, out_features = n, bias=False)
@@ -28,19 +16,19 @@ class LISTA(nn.Module):
         self.thr = nn.Parameter(torch.rand(numIter,1), requires_grad=True)
         self.numIter = numIter
         self.A = Dict
-        self.alpha = alpha
+        self.L = L
         self.device = device
         
     # custom weights initialization called on network
     def weights_init(self):
         A = self.A
-        alpha = self.alpha
-        S = torch.from_numpy(np.eye(A.shape[1]) - (1/alpha)*np.matmul(A.T, A))
+        L = self.L
+        S = torch.from_numpy(np.eye(A.shape[1]) - (1/L)*np.matmul(A.T, A))
         S = S.float().to(self.device)
-        B = torch.from_numpy((1/alpha)*A.T)
+        B = torch.from_numpy((1/L)*A.T)
         B = B.float().to(self.device)
         
-        thr = torch.ones(self.numIter, 1) * 0.1 / alpha
+        thr = torch.ones(self.numIter, 1) * 0.1 / L
         
         self._S.weight = nn.Parameter(S)
         self._W.weight = nn.Parameter(B)
@@ -105,10 +93,10 @@ def LISTA_train(X , Y, D, numEpochs, numLayers, device, learning_rate):
     T = np.matmul(D.T, D)
     eg, _ = np.linalg.eig(T)
     eg = np.abs(eg)
-    alpha = np.max(eg)*1.001
+    L = np.max(eg)*1.001
 
     # Numpy Random State if rng (passed through arguments)
-    net = LISTA(m, n, D, numLayers, alpha = alpha, device = device)
+    net = LISTA(m, n, D, numLayers, L = L, device = device)
     net = net.float().to(device)
     #-------------------*****************-_-----------------
     net.weights_init()
